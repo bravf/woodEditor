@@ -1,12 +1,13 @@
 // 加粗、斜体
 import "./index.scss";
-import "./theme.css";
+// import "./theme.css";
+import "github-markdown-css";
 import codeMirror from "codemirror";
 import "codemirror/mode/markdown/markdown.js";
 import "codemirror/lib/codemirror.css";
 import marked from "./marked/src/marked";
 import throttle from "lodash.throttle";
-import $, { each } from "jquery";
+import $ from "jquery";
 window.$ = $;
 
 const throttleTime = 50;
