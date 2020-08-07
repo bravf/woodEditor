@@ -1,6 +1,5 @@
 // 加粗、斜体
 import "./index.scss";
-// import "./theme.css";
 import "github-markdown-css";
 import codeMirror from "codemirror";
 import "codemirror/mode/markdown/markdown.js";
@@ -97,7 +96,6 @@ const render = () => {
   const tokens = marked.lexer($code.getValue());
   setLineNo(tokens);
   const html = marked.parser(tokens);
-  console.log(tokens);
   $resultBox.innerHTML = html;
   setLineNoAfter();
 };
