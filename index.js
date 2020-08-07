@@ -20,8 +20,8 @@ const $code = codeMirror.fromTextArea($editor, {
   lineWrapping: true,
   firstLineNumber: 0,
 });
-// const $codeScroller = document.querySelector(".CodeMirror-scroll");
-// const $virtual = document.querySelector(".CodeMirror-lines").parentElement;
+const $codeScroller = document.querySelector(".CodeMirror-scroll");
+const $virtual = document.querySelector(".CodeMirror-lines").parentElement;
 const flt = (str) => parseFloat(str) || 0;
 const getOffsetTop = ($dom) =>
   $($dom).offset().top - $($resultBox).offset().top;
@@ -121,6 +121,19 @@ const getCodeTopLine = () => {
 
   return { lineNo, percent };
 };
+// 得到 x - y 行之间的滚动比
+const getPercent = (x, y) => {
+  let $line = $virtual.querySelector(`[no="${x}"]`);
+  if (!$line) return 0;
+  $line = $line.parentElement;
+  // x - y之间的总高度
+  const total = $code.heightAtLine(y) - $code.heightAtLine(x);
+
+  let hasScroll =
+    $codeScroller.scrollTop - flt($virtual.style.top) - $line.offsetTop;
+  console.log({ x, y, total });
+  return hasScroll / total;
+};
 
 const scrollResult = (line) => {
   const { lineNo } = line;
@@ -138,10 +151,11 @@ const scrollResult = (line) => {
   if (nextBlockNo === blockNo) {
     nextBlockNo = $code.lineCount();
   }
-  const noLength = nextBlockNo - blockNo;
-  const top =
-    getOffsetTop($block) +
-    ($block.offsetHeight * (lineNo - blockNo)) / noLength;
+  const percent = getPercent(blockNo, nextBlockNo);
+  // const noLength = nextBlockNo - blockNo;
+  // const percent = (lineNo - blockNo) / noLength
+  console.log({ lineNo, percent });
+  const top = getOffsetTop($block) + $block.offsetHeight * percent;
   $result.scrollTo(0, top);
 };
 
