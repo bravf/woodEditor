@@ -127,19 +127,20 @@ const getCodeTopLine = () => {
 const scrollResult = (line) => {
   const { lineNo } = line;
   let $block;
-  let blockNo;
-  let noLength = 1;
+  let blockNo, nextBlockNo;
   for (let $ele of $resultBox.querySelectorAll("[no]")) {
-    const no = parseInt($ele.getAttribute("no"));
-
-    if (no > lineNo) {
-      noLength = no - blockNo;
+    nextBlockNo = parseInt($ele.getAttribute("no"));
+    if (nextBlockNo > lineNo) {
       break;
     } else {
       $block = $ele;
-      blockNo = no;
+      blockNo = nextBlockNo;
     }
   }
+  if (nextBlockNo === blockNo) {
+    nextBlockNo = $code.lineCount();
+  }
+  const noLength = nextBlockNo - blockNo;
   const top =
     getOffsetTop($block) +
     ($block.offsetHeight * (lineNo - blockNo)) / noLength;
