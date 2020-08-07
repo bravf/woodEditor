@@ -13,7 +13,7 @@ const throttleTime = 50;
 const $editor = document.querySelector("#textarea");
 const $result = document.querySelector("#result");
 const $resultBox = document.querySelector("#resultBox");
-const initValue = $editor.innerHTML;
+const initValue = $editor.value;
 const $code = codeMirror.fromTextArea($editor, {
   mode: "markdown",
   lineNumbers: true,
@@ -149,6 +149,11 @@ const scrollCode = (line) => {
 // 获取 result 当前的 line 信息
 const getResultTopLine = () => {
   const scrollTop = $result.scrollTop;
+
+  // 误差修正
+  if (scrollTop === 0) {
+    return { lineNo: 0, percent: 0 };
+  }
   let $block;
   let blocki;
   let percent;
