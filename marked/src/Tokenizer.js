@@ -402,7 +402,6 @@ module.exports = class Tokenizer {
   escape(src) {
     const cap = this.rules.inline.escape.exec(src);
     if (cap) {
-      console.log(cap);
       return {
         type: "escape",
         raw: cap[0],

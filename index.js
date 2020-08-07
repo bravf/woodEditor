@@ -6,7 +6,7 @@ import "codemirror/mode/markdown/markdown.js";
 import "codemirror/lib/codemirror.css";
 import marked from "./marked/src/marked";
 import throttle from "lodash.throttle";
-import $ from "jquery";
+import $, { each } from "jquery";
 window.$ = $;
 
 const throttleTime = 50;
@@ -37,17 +37,22 @@ const setLineNo = (tokens) => {
   const f = (_tokens) => {
     _tokens.forEach((token, i) => {
       const { type, raw } = token;
+      if (type === "placeholder") {
+        token.startNo = eat(raw);
+        return;
+      }
       if (["heading", "space", "code", "hr", "text", "table"].includes(type)) {
         token.startNo = eat(raw);
         return;
       }
-      if (type === "blockquote") {
+      if ("blockquote" === type) {
         token.startNo = eat(raw + "\n");
         return;
       }
       if (type === "paragraph") {
         const isNextSpae = _tokens[i + 1]?.type === "space";
         token.startNo = eat(raw + (isNextSpae ? "" : "\n"));
+        return;
       }
       if (type === "list") {
         return f(token.items);
@@ -85,7 +90,6 @@ const setLineNoAfter = () => {
 
 const render = () => {
   const tokens = marked.lexer($code.getValue());
-  console.log(tokens);
   setLineNo(tokens);
   const html = marked.parser(tokens);
   $resultBox.innerHTML = html;

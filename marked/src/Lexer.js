@@ -198,12 +198,18 @@ module.exports = class Lexer {
       // def
       if (top && (token = this.tokenizer.def(src))) {
         src = src.substring(token.raw.length);
+
         if (!this.tokens.links[token.tag]) {
           this.tokens.links[token.tag] = {
             href: token.href,
             title: token.title,
           };
         }
+        // 这里把 def 也加入到 token 中，不解析，只用来做 line 占位
+        tokens.push({
+          ...token,
+          type: "placeholder",
+        });
         continue;
       }
 

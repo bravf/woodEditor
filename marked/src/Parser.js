@@ -53,6 +53,10 @@ module.exports = class Parser {
     for (i = 0; i < l; i++) {
       token = tokens[i];
       switch (token.type) {
+        // 遇到自定义的占位符跳过
+        case "placeholder": {
+          continue;
+        }
         case "space": {
           continue;
         }
