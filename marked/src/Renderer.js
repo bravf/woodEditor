@@ -42,8 +42,9 @@ module.exports = class Renderer {
     return `<blockquote${no(startNo)}>\n` + quote + "</blockquote>\n";
   }
 
-  html(html) {
-    return html;
+  html(html, startNo, isBlock = false) {
+    if (isBlock) return html.replace(/(<[a-zA-Z0-9\-]+)/, `$1${no(startNo)}`);
+    else return html;
   }
 
   heading(text, level, raw, slugger, startNo) {

@@ -42,7 +42,11 @@ const setLineNo = (tokens) => {
         token.startNo = eat(raw);
         return;
       }
-      if (["heading", "space", "code", "hr", "text", "table"].includes(type)) {
+      if (
+        ["heading", "space", "code", "hr", "text", "table", "html"].includes(
+          type
+        )
+      ) {
         token.startNo = eat(raw);
         return;
       }
@@ -93,6 +97,7 @@ const render = () => {
   const tokens = marked.lexer($code.getValue());
   setLineNo(tokens);
   const html = marked.parser(tokens);
+  console.log(tokens);
   $resultBox.innerHTML = html;
   setLineNoAfter();
 };

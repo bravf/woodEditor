@@ -172,7 +172,7 @@ module.exports = class Parser {
         }
         case "html": {
           // TODO parse inline content if parameter markdown=1
-          out += this.renderer.html(token.text);
+          out += this.renderer.html(token.text, token.startNo, true);
           continue;
         }
         case "paragraph": {
