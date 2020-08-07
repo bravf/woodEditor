@@ -43,8 +43,7 @@ module.exports = class Renderer {
   }
 
   html(html) {
-    // 屏蔽 html 标签
-    return "";
+    return html;
   }
 
   heading(text, level, raw, slugger, startNo) {
