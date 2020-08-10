@@ -6,6 +6,7 @@
     "codemirror": "^5.56.0",
     "github-markdown-css": "^4.0.0",
     "jquery": "^3.5.1",
+    "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
     "marked": "^1.1.1"
   }

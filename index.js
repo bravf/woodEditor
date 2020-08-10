@@ -6,10 +6,11 @@ import "codemirror/mode/markdown/markdown.js";
 import "codemirror/lib/codemirror.css";
 import marked from "./marked/src/marked";
 import throttle from "lodash.throttle";
+import debounce from "lodash.debounce";
 import $ from "jquery";
 window.$ = $;
 
-const throttleTime = 50;
+const throttleTime = 100;
 const $editor = document.querySelector("#textarea");
 const $result = document.querySelector("#result");
 const $resultBox = document.querySelector("#resultBox");
@@ -20,8 +21,6 @@ const $code = codeMirror.fromTextArea($editor, {
   lineWrapping: true,
   firstLineNumber: 0,
 });
-const $codeScroller = document.querySelector(".CodeMirror-scroll");
-const $virtual = document.querySelector(".CodeMirror-lines").parentElement;
 const flt = (str) => parseFloat(str) || 0;
 const getOffsetTop = ($dom) =>
   $($dom).offset().top - $($resultBox).offset().top;
@@ -125,35 +124,34 @@ const render = () => {
 
 let isResultScroll = false;
 
+const getCodeLineTop = (line) => $code.charCoords({ line, ch: 0 }, "local").top;
 const getCodeTopLine = () => {
   const scrollInfo = $code.getScrollInfo();
   return $code.coordsChar(scrollInfo, "local").line;
 };
-const getCodeBlockScrollPercent = (blockPos) => {
+const getCodeBlockScrollPercent = (line, blockPos) => {
   const { startPos, endPos } = blockPos;
-  let $line = $virtual.querySelector(`[no="${startPos}"]`);
-  if (!$line) return 0;
-  $line = $line.parentElement;
-  const total = $code.heightAtLine(endPos) - $code.heightAtLine(startPos);
+  const currTop = getCodeLineTop(line);
+  const startTop = getCodeLineTop(startPos);
+  const endTop = getCodeLineTop(endPos);
+  const total = endTop - startTop;
   if (total === 0) {
     return 0;
   }
 
-  let hasScroll =
-    $codeScroller.scrollTop - flt($virtual.style.top) - $line.offsetTop;
-  return hasScroll / total;
+  return (currTop - startTop) / (endTop - startTop);
 };
 const getCodeBlockInfo = () => {
   const line = getCodeTopLine();
   const blockPos = getBlockPos(line);
-  const percent = getCodeBlockScrollPercent(blockPos);
+  const percent = getCodeBlockScrollPercent(line, blockPos);
   return { blockPos, percent };
 };
 const scrollCode = (blockInfo) => {
   const { blockPos, percent } = blockInfo;
   const { startPos, endPos } = blockPos;
-  const startTop = $code.charCoords({ line: startPos, ch: 0 }, "local").top;
-  const endTop = $code.charCoords({ line: endPos, ch: 0 }, "local").top;
+  const startTop = getCodeLineTop(startPos);
+  const endTop = getCodeLineTop(endPos);
   const top = startTop + (endTop - startTop) * percent;
   $code.scrollTo(null, top);
 };
@@ -161,7 +159,7 @@ $code.on(
   "change",
   throttle(() => {
     render();
-  }, throttleTime)
+  }, 1000)
 );
 $code.on(
   "scroll",
@@ -170,10 +168,6 @@ $code.on(
     scrollResult(getCodeBlockInfo());
   }, throttleTime)
 );
-$code.on("renderLine", (instance, line, element) => {
-  const lineNo = $code.getLineNumber(line);
-  element.setAttribute("no", lineNo);
-});
 $code.setValue(initValue);
 
 // 获取 result 当前的 line 信息
