@@ -6,7 +6,6 @@ import "codemirror/mode/markdown/markdown.js";
 import "codemirror/lib/codemirror.css";
 import marked from "./marked/src/marked";
 import throttle from "lodash.throttle";
-import debounce from "lodash.debounce";
 import $ from "jquery";
 window.$ = $;
 
@@ -31,6 +30,7 @@ const getblockPosTags = () => {
   blockPosTags = Array.from($result.querySelectorAll("[no]")).map(($el) => {
     return flt($el.getAttribute("no"));
   });
+  blockPosTags.push($code.lineCount());
 };
 const getBlockPos = (no) => {
   let startPos = blockPosTags[0];
@@ -124,7 +124,7 @@ const render = () => {
 
 let isResultScroll = false;
 
-const getCodeLineTop = (line) => $code.charCoords({ line, ch: 0 }, "local").top;
+const getCodeLineTop = (line) => $code.charCoords({ line }, "local").top;
 const getCodeTopLine = () => {
   const scrollInfo = $code.getScrollInfo();
   return $code.coordsChar(scrollInfo, "local").line;
@@ -201,6 +201,7 @@ const scrollResult = (blockInfo) => {
   const { blockPos, percent } = blockInfo;
   const { startPos } = blockPos;
   const $block = $resultBox.querySelector(`[no="${startPos}"]`);
+  if (!$block) return;
   const top = getOffsetTop($block) + $block.offsetHeight * percent;
   $result.scrollTo(0, top);
 };
