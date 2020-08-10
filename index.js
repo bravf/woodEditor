@@ -6,8 +6,50 @@ import "codemirror/mode/markdown/markdown.js";
 import "codemirror/lib/codemirror.css";
 import marked from "./marked/src/marked";
 import throttle from "lodash.throttle";
+import Vue from "vue";
+import jsx from "vue-jsx";
 import $ from "jquery";
 window.$ = $;
+
+// 借助 vue 的 dom diff render 原理，避免渲染抖动
+const { create } = jsx;
+const vueApp = new Vue({
+  data() {
+    return {
+      block: $("<div/>"),
+    };
+  },
+  methods: {
+    setHtml(block) {
+      this.block = block;
+    },
+    getVnodeProps(node) {
+      const jsxProps = {};
+      Array.from(node.attributes).forEach((attr) => {
+        jsxProps[`attrs_${attr.name}`] = attr.value;
+      });
+      return jsxProps;
+    },
+    createVNodes(nodes) {
+      return Array.from(nodes).map((node) => {
+        const tagName = node.tagName;
+        const text = node.textContent;
+        if (tagName) {
+          const children = this.createVNodes(node.childNodes);
+          return create(tagName, this.getVnodeProps(node), ...children);
+        } else {
+          return text;
+        }
+      });
+    },
+  },
+  render(h) {
+    jsx.h = h;
+    const nodes = this.block;
+    const vnodes = this.createVNodes(nodes);
+    return create("div", ...vnodes);
+  },
+}).$mount("#resultVue");
 
 const throttleTime = 100;
 const $editor = document.querySelector("#textarea");
@@ -25,9 +67,10 @@ const getOffsetTop = ($dom) =>
   $($dom).offset().top - $($resultBox).offset().top;
 
 // block 位置记录和操作
+let $myBlock;
 let blockPosTags = [];
 const getblockPosTags = () => {
-  blockPosTags = Array.from($result.querySelectorAll("[no]")).map(($el) => {
+  blockPosTags = Array.from($myBlock[0].querySelectorAll("[no]")).map(($el) => {
     return flt($el.getAttribute("no"));
   });
   blockPosTags.push($code.lineCount());
@@ -100,7 +143,7 @@ const setLineNo = (tokens) => {
 };
 // 后置处理，对于一些嵌套标签
 const setLineNoAfter = () => {
-  for (let $ele of $resultBox.querySelectorAll("li[no]")) {
+  for (let $ele of $myBlock[0].querySelectorAll("li[no]")) {
     let firstChild = $ele.firstChild;
     if (firstChild.nodeType === 3) {
       const newFirstChild = document.createElement("p");
@@ -117,9 +160,10 @@ const render = () => {
   const tokens = marked.lexer($code.getValue());
   setLineNo(tokens);
   const html = marked.parser(tokens);
-  $resultBox.innerHTML = html;
+  $myBlock = $("<div>").html(html);
   setLineNoAfter();
   getblockPosTags();
+  vueApp.setHtml($myBlock);
 };
 
 let isResultScroll = false;
@@ -159,7 +203,7 @@ $code.on(
   "change",
   throttle(() => {
     render();
-  }, 1000)
+  }, throttleTime)
 );
 $code.on(
   "scroll",

@@ -8,6 +8,8 @@
     "jquery": "^3.5.1",
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
-    "marked": "^1.1.1"
+    "marked": "^1.1.1",
+    "vue": "^2.6.11",
+    "vue-jsx": "^0.2.9"
   }
 }
