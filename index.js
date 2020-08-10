@@ -26,6 +26,28 @@ const flt = (str) => parseFloat(str) || 0;
 const getOffsetTop = ($dom) =>
   $($dom).offset().top - $($resultBox).offset().top;
 
+// block 位置记录和操作
+let blockPosTags = [];
+const getblockPosTags = () => {
+  blockPosTags = Array.from($result.querySelectorAll("[no]")).map(($el) => {
+    return flt($el.getAttribute("no"));
+  });
+};
+const getBlockPos = (no) => {
+  let startPos = blockPosTags[0];
+  let endPos = startPos;
+  for (let i = 0, tag; i < blockPosTags.length; i++) {
+    tag = blockPosTags[i];
+    endPos = tag;
+    if (endPos > no) {
+      break;
+    } else {
+      startPos = tag;
+    }
+  }
+  return { startPos, endPos };
+};
+
 // 给 tokens 设置行号
 const setLineNo = (tokens) => {
   let no = 0;
@@ -98,83 +120,66 @@ const render = () => {
   const html = marked.parser(tokens);
   $resultBox.innerHTML = html;
   setLineNoAfter();
+  getblockPosTags();
 };
 
 let isResultScroll = false;
 
 const getCodeTopLine = () => {
   const scrollInfo = $code.getScrollInfo();
-  const lineNo = $code.coordsChar(scrollInfo, "local").line;
-  let percent = 0;
-
-  // 获取此行的滚动距离
-  // 获取单行滚动比例没有意义
-  // let $line = $virtual.querySelector(`[no="${lineNo}"]`);
-  // if ($line) {
-  //   $line = $line.parentElement;
-  //   const scroll =
-  //     $codeScroller.scrollTop - flt($virtual.style.top) - $line.offsetTop;
-  //   if (scroll > 0) {
-  //     percent = Math.min(1, scroll / $line.offsetHeight);
-  //   }
-  // }
-
-  return { lineNo, percent };
+  return $code.coordsChar(scrollInfo, "local").line;
 };
-// 得到 x - y 行之间的滚动比
-const getPercent = (x, y) => {
-  let $line = $virtual.querySelector(`[no="${x}"]`);
+const getCodeBlockScrollPercent = (blockPos) => {
+  const { startPos, endPos } = blockPos;
+  let $line = $virtual.querySelector(`[no="${startPos}"]`);
   if (!$line) return 0;
   $line = $line.parentElement;
-  // x - y之间的总高度
-  const total = $code.heightAtLine(y) - $code.heightAtLine(x);
+  const total = $code.heightAtLine(endPos) - $code.heightAtLine(startPos);
+  if (total === 0) {
+    return 0;
+  }
 
   let hasScroll =
     $codeScroller.scrollTop - flt($virtual.style.top) - $line.offsetTop;
-  console.log({ x, y, total });
   return hasScroll / total;
 };
-
-const scrollResult = (line) => {
-  const { lineNo } = line;
-  let $block;
-  let blockNo, nextBlockNo;
-  for (let $ele of $resultBox.querySelectorAll("[no]")) {
-    nextBlockNo = parseInt($ele.getAttribute("no"));
-    if (nextBlockNo > lineNo) {
-      break;
-    } else {
-      $block = $ele;
-      blockNo = nextBlockNo;
-    }
-  }
-  if (nextBlockNo === blockNo) {
-    nextBlockNo = $code.lineCount();
-  }
-  const percent = getPercent(blockNo, nextBlockNo);
-  // const noLength = nextBlockNo - blockNo;
-  // const percent = (lineNo - blockNo) / noLength
-  console.log({ lineNo, percent });
-  const top = getOffsetTop($block) + $block.offsetHeight * percent;
-  $result.scrollTo(0, top);
+const getCodeBlockInfo = () => {
+  const line = getCodeTopLine();
+  const blockPos = getBlockPos(line);
+  const percent = getCodeBlockScrollPercent(blockPos);
+  return { blockPos, percent };
 };
-
-const scrollCode = (line) => {
-  const { lineNo } = line;
-  const top = $code.charCoords({ line: lineNo, ch: 0 }, "local").top;
+const scrollCode = (blockInfo) => {
+  const { blockPos, percent } = blockInfo;
+  const { startPos, endPos } = blockPos;
+  const startTop = $code.charCoords({ line: startPos, ch: 0 }, "local").top;
+  const endTop = $code.charCoords({ line: endPos, ch: 0 }, "local").top;
+  const top = startTop + (endTop - startTop) * percent;
   $code.scrollTo(null, top);
 };
+$code.on(
+  "change",
+  throttle(() => {
+    render();
+  }, throttleTime)
+);
+$code.on(
+  "scroll",
+  throttle(() => {
+    if (isResultScroll) return;
+    scrollResult(getCodeBlockInfo());
+  }, throttleTime)
+);
+$code.on("renderLine", (instance, line, element) => {
+  const lineNo = $code.getLineNumber(line);
+  element.setAttribute("no", lineNo);
+});
+$code.setValue(initValue);
 
 // 获取 result 当前的 line 信息
-const getResultTopLine = () => {
+const getResultBlockInfo = () => {
   const scrollTop = $result.scrollTop;
-
-  // 误差修正
-  if (scrollTop === 0) {
-    return { lineNo: 0, percent: 0 };
-  }
-  let $block;
-  let blocki;
+  let no = null;
   let percent;
   const $blocks = $result.querySelectorAll("[no]");
 
@@ -186,32 +191,34 @@ const getResultTopLine = () => {
     const endTop = beginTop + $ele.offsetHeight + marginBottom;
 
     if (scrollTop >= beginTop && scrollTop <= endTop) {
-      $block = $ele;
-      blocki = i;
+      no = flt($ele.getAttribute("no"));
       percent = (scrollTop - beginTop) / (endTop - beginTop);
       return true;
     }
   });
 
-  if (!$block) {
+  if (no === null) {
     return null;
   }
-
-  const beginLineNo = parseInt($block.getAttribute("no"));
-  let noLength = 0;
-  if ($blocks[blocki + 1]) {
-    noLength = parseInt($blocks[blocki + 1].getAttribute("no")) - beginLineNo;
-  }
-  const lineNo = beginLineNo + Math.round(noLength * percent);
-  return { lineNo, percent };
+  const blockPos = getBlockPos(no);
+  return { blockPos, percent };
+};
+const scrollResult = (blockInfo) => {
+  const { blockPos, percent } = blockInfo;
+  const { startPos } = blockPos;
+  const $block = $resultBox.querySelector(`[no="${startPos}"]`);
+  const top = getOffsetTop($block) + $block.offsetHeight * percent;
+  $result.scrollTo(0, top);
 };
 
 $result.addEventListener(
   "scroll",
   throttle(() => {
     if (!isResultScroll) return;
-    const line = getResultTopLine();
-    line && scrollCode(line);
+    const resultBlockInfo = getResultBlockInfo();
+    if (resultBlockInfo !== null) {
+      scrollCode(resultBlockInfo);
+    }
   }, throttleTime)
 );
 $result.addEventListener("mouseover", () => {
@@ -220,23 +227,3 @@ $result.addEventListener("mouseover", () => {
 $result.addEventListener("mouseout", () => {
   isResultScroll = false;
 });
-
-$code.on(
-  "change",
-  throttle(() => {
-    render();
-  }, throttleTime)
-);
-$code.on(
-  "scroll",
-  throttle(() => {
-    if (isResultScroll) return;
-    const line = getCodeTopLine();
-    scrollResult(line);
-  }, throttleTime)
-);
-$code.on("renderLine", (instance, line, element) => {
-  const lineNo = $code.getLineNumber(line);
-  element.setAttribute("no", lineNo);
-});
-$code.setValue(initValue);
