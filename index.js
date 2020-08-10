@@ -145,8 +145,11 @@ const setLineNo = (tokens) => {
 const setLineNoAfter = () => {
   for (let $ele of $myBlock[0].querySelectorAll("li[no]")) {
     let firstChild = $ele.firstChild;
+    if (!firstChild) {
+      continue;
+    }
     if (firstChild.nodeType === 3) {
-      const newFirstChild = document.createElement("p");
+      const newFirstChild = document.createElement("div");
       $ele.insertBefore(newFirstChild, firstChild);
       newFirstChild.appendChild(firstChild);
       firstChild = newFirstChild;
