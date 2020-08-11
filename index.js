@@ -126,15 +126,14 @@ const setLineNo = (tokens) => {
         return f(token.items);
       }
       if (type === "list_item") {
-        if (token.tokens.slice(-1)[0]?.type === "list") {
-          token.startNo = eat(token.tokens[0].raw + "\n");
+        const hasList = token.tokens.slice(-1)[0]?.type === "list";
+        let str = hasList ? token.tokens[0].raw : token.raw;
+        if (token.tokens[1]?.type !== "space") {
+          str += "\n";
+        }
+        token.startNo = eat(str);
+        if (hasList) {
           return f(token.tokens.slice(1));
-        } else {
-          let str = token.raw;
-          if (token.tokens[1]?.type !== "space") {
-            str += "\n";
-          }
-          token.startNo = eat(str);
         }
       }
     });
