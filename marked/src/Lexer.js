@@ -205,7 +205,7 @@ module.exports = class Lexer {
             title: token.title,
           };
         }
-        // 这里把 def 也加入到 token 中，不解析，只用来做 line 占位
+        // tag: 这里把 def 也加入到 token 中，不解析，只用来做 line 占位
         tokens.push({
           ...token,
           type: "placeholder",

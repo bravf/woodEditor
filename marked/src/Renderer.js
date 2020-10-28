@@ -19,17 +19,18 @@ module.exports = class Renderer {
         code = out;
       }
     }
+    const type = ' btype="code"';
 
     if (!lang) {
       return (
-        `<pre${no(startNo)}><code>` +
+        `<pre${no(startNo)}${type}><code>` +
         (escaped ? code : escape(code, true)) +
         "</code></pre>\n"
       );
     }
 
     return (
-      `<pre${no(startNo)}><code class="` +
+      `<pre${no(startNo)}${type}><code class="` +
       this.options.langPrefix +
       escape(lang, true) +
       '">' +
@@ -48,11 +49,12 @@ module.exports = class Renderer {
   }
 
   heading(text, level, raw, slugger, startNo) {
+    const btype = ' btype="heading"';
     if (this.options.headerIds) {
       return (
         "<h" +
         level +
-        `${no(startNo)} id="` +
+        `${no(startNo)}${btype} id="` +
         this.options.headerPrefix +
         slugger.slug(raw) +
         '">' +

@@ -55,7 +55,8 @@ const throttleTime = 100;
 const $editor = document.querySelector("#textarea");
 const $result = document.querySelector("#result");
 const $resultBox = document.querySelector("#resultBox");
-const initValue = $editor.value;
+let initValue = $editor.value;
+$editor.value = "";
 const $code = codeMirror.fromTextArea($editor, {
   mode: "markdown",
   lineNumbers: true,
@@ -69,10 +70,16 @@ const getOffsetTop = ($dom) =>
 // block 位置记录和操作
 let $myBlock;
 let blockPosTags = [];
+let blockPosTypes = [];
 const getblockPosTags = () => {
   blockPosTags = Array.from($myBlock[0].querySelectorAll("[no]")).map(($el) => {
     return flt($el.getAttribute("no"));
   });
+  blockPosTypes = Array.from($myBlock[0].querySelectorAll("[no]")).map(
+    ($el) => {
+      return $el.getAttribute("btype");
+    }
+  );
   blockPosTags.push($code.lineCount());
 };
 const getBlockPos = (no) => {
@@ -166,6 +173,9 @@ const render = () => {
   setLineNoAfter();
   getblockPosTags();
   vueApp.setHtml($myBlock);
+  // setTimeout(() => {
+  //   setLineWidgets($myBlock);
+  // });
 };
 
 let isResultScroll = false;
@@ -214,7 +224,6 @@ $code.on(
     scrollResult(getCodeBlockInfo());
   }, throttleTime)
 );
-$code.setValue(initValue);
 
 // 获取 result 当前的 line 信息
 const getResultBlockInfo = () => {
@@ -268,3 +277,29 @@ $result.addEventListener("mouseover", () => {
 $result.addEventListener("mouseout", () => {
   isResultScroll = false;
 });
+
+// // 测试 widget
+// $code.on("renderLine", (instance, line, element) => {
+//   const lineNumber = instance.getLineNumber(line);
+//   const blockPos = getBlockPos(lineNumber);
+//   const blockType = blockPosTypes[blockPosTags.indexOf(blockPos.startPos)];
+//   if (blockType === "code") {
+//     $(element).css("backgroundColor", "#f6f8fa");
+//   } else if (blockType === "heading") {
+//     $(element).css("fontSize", "16px");
+//   }
+// });
+// $code.on("cursorActivity", (instance) => {
+//   // console.log(1);
+//   const line = instance.getCursor().line;
+//   const tokens = instance.getLineTokens(line);
+//   console.log({ line, tokens });
+// });
+// function setLineWidgets($block) {
+//   // $block[0].querySelectorAll("[no]").forEach((node) => {
+//   //   const line = flt(node.getAttribute("no"));
+//   //   $code.addLineWidget(line, node);
+//   // });
+// }
+// initValue = "# 123";
+$code.setValue(initValue);
